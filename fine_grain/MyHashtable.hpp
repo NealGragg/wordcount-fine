@@ -4,6 +4,7 @@
 #include <functional>
 #include <iostream>
 #include <vector>
+#include <mutex>
 
 template<class K, class V>
 struct Node {
@@ -33,6 +34,7 @@ protected:
     MyHashtable& mt;
     int bucket;
     Node<K,V>* cur;
+    std::lock_guard<std::mutex>[mt.capacity] lock_guards; //added this line
 
     hashtable_iter() = default;
     virtual ~hashtable_iter() = default;
@@ -144,6 +146,31 @@ public:
     }
   }
 
+  virtual void update(const K& key) {
+    //get
+    std::size_t index = std::hash<K>{}(key) % this->capacity;
+    index = index < 0 ? index + this->capacity : index;
+    const Node<K,V>* node = this->table[index];
+    int lockIndex = this->capacity % index;
+
+     while (node != nullptr) {
+      if (node->key == key) {
+	lock_guards[lockIndex] = lg(std::mutex mut);
+        node->value++;
+	return;
+      }
+      node = node->next;
+    }
+
+    node = new Node<K,V>(key, 1);
+    node->next = this->table[index];
+    this->table[index] = node;
+    this->count++;
+    if (((double)this->count)/this->capacity > this->loadFactor) {
+      this->resize(this->capacity * 2);
+    }
+  }
+  
   /**
    * deletes the node at given key
    * @param key key of node to be deleted
