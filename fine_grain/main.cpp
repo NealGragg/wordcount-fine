@@ -3,9 +3,12 @@
 #include <sstream>
 #include <vector>
 #include <thread>
+#include <mutex>
 
 #include "Dictionary.hpp"
 #include "MyHashtable.hpp"
+
+std::mutex mutexArray [1000000];
 
 //Tokenize a string into individual word, removing punctuation at the
 //end of words
