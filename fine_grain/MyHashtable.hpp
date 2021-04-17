@@ -6,6 +6,8 @@
 #include <vector>
 #include <mutex>
 
+extern std::mutex mutexArray [1000000]; //added this line
+
 template<class K, class V>
 struct Node {
   K key;
@@ -34,7 +36,7 @@ protected:
     MyHashtable& mt;
     int bucket;
     Node<K,V>* cur;
-    std::lock_guard<std::mutex>[mt.capacity] lock_guards; //added this line
+  
 
     hashtable_iter() = default;
     virtual ~hashtable_iter() = default;
@@ -146,16 +148,18 @@ public:
     }
   }
 
+  //added this method
   virtual void update(const K& key) {
     //get
     std::size_t index = std::hash<K>{}(key) % this->capacity;
     index = index < 0 ? index + this->capacity : index;
-    const Node<K,V>* node = this->table[index];
-    int lockIndex = this->capacity % index;
+    Node<K,V>* node = this->table[index];
+    int muIndex = std::hash<K>{}(key) % this->capacity;
 
+    //set
      while (node != nullptr) {
       if (node->key == key) {
-	lock_guards[lockIndex] = lg(std::mutex mut);
+	std::lock_guard<std::mutex> lg(mutexArray[muIndex]);
         node->value++;
 	return;
       }
